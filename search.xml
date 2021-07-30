@@ -3,23 +3,12 @@
   <entry>
     <title>clang</title>
     <url>/2021/07/29/clang/</url>
-    <content><![CDATA[<h2 id="this-is-a-test"><a href="#this-is-a-test" class="headerlink" title="this is a test"></a>this is a test</h2>]]></content>
+    <content><![CDATA[<h2 id="this-is-a-test"><a href="#this-is-a-test" class="headerlink" title="this is a test"></a>this is a test</h2><h3 id="3rd"><a href="#3rd" class="headerlink" title="3rd"></a>3rd</h3>]]></content>
       <categories>
         <category>learn</category>
       </categories>
       <tags>
         <tag>C</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>cpp</title>
-    <url>/2021/07/30/cpp/</url>
-    <content><![CDATA[<h2 id="this-is-an-another-try"><a href="#this-is-an-another-try" class="headerlink" title="this is an another try"></a>this is an another try</h2>]]></content>
-      <categories>
-        <category>staff</category>
-      </categories>
-      <tags>
-        <tag>c</tag>
       </tags>
   </entry>
 </search>
