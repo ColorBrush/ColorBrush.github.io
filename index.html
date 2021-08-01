@@ -28,7 +28,7 @@
 <meta property="og:description" content="涉及的主要编程语言C">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="Daniel">
-<meta property="article:tag" content="C++">
+<meta property="article:tag" content="C&#x2F;C++">
 <meta name="twitter:card" content="summary">
 
 <link rel="canonical" href="http://example.com/">
@@ -189,7 +189,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/29/clang/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/29/kernel/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -203,7 +203,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/07/29/clang/" class="post-title-link" itemprop="url">clang</a>
+            <a href="/2021/07/29/kernel/" class="post-title-link" itemprop="url">RT-Thread内核解析</a>
         </h2>
 
         <div class="post-meta">
@@ -243,7 +243,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="this-is-a-test"><a href="#this-is-a-test" class="headerlink" title="this is a test"></a>this is a test</h2><h3 id="3rd"><a href="#3rd" class="headerlink" title="3rd"></a>3rd</h3>
+          <p>####系统内核对象<br>首先要说明的是RT-Thread系统是采用面向对象思想（OOP）设计的，系统级别的基础设施都是系统内核的一种对象。目前系统对象有11种，例如：线程、信号量、互斥锁、事件集、邮箱、消息队列等等。如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">enum rt_object_class_type</span><br><span class="line">&#123;</span><br><span class="line">    RT_Object_Class_Thread,                 /* 线程对象 */</span><br><span class="line">    RT_Object_Class_Semaphore,              /* 信号量对象 */</span><br><span class="line">    RT_Object_Class_Mutex,                  /* 互斥量对象 */</span><br><span class="line">    RT_Object_Class_Event,                  /* 事件集对象 */</span><br><span class="line">    RT_Object_Class_MailBox,                /* 邮箱对象 */</span><br><span class="line">    RT_Object_Class_MessageQueue,           /* 消息队列对象 */</span><br><span class="line">    RT_Object_Class_MemHeap,                /* 动态内存堆对象 */</span><br><span class="line">    RT_Object_Class_MemPool,                /* 内存池对象 */</span><br><span class="line">    RT_Object_Class_Device,                 /* 设备对象 */</span><br><span class="line">    RT_Object_Class_Timer,                  /* 定时器对象 */</span><br><span class="line">    RT_Object_Class_Module,                 /* 模块对象 */</span><br><span class="line">    RT_Object_Class_Unknown,                /* 未知 */</span><br><span class="line">    RT_Object_Class_Static = 0x80           /* 系统静态对象标识 */</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这些系统对象可以是静态分配的静态对象，也可以是系统内存堆中分配的动态对象。对于系统静态对象在记录系统对象类型的时候需要将具体类型的枚举值位或上RT_Object_Class_Static = 0x80，例如：<br>系统动态创建的线程对象：RT_Object_Class_Thread；<br>系统静态创建的线程对象：RT_Object_Class_Thread | RT_Object_Class_Static；</p>
+<p>####对象控制块数据结构</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">struct rt_object</span><br><span class="line">&#123;</span><br><span class="line">    char name[RT_NAME_MAX];             /**&lt; 对象名称 */</span><br><span class="line">    rt_uint8_t type;                    /**&lt; 对象类型 */</span><br><span class="line">    rt_uint8_t flag;                    /**&lt; 保存对象标志 */</span><br><span class="line"> </span><br><span class="line">#ifdef RT_USING_MODULE</span><br><span class="line">    void      *module_id;               /**&lt; 应用模块的ID */</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">    rt_list_t  list;                    /**&lt; 对象链表;内核会将创建的对象插入到其对象容器中,使用链表来管理 */</span><br><span class="line">&#125;;</span><br><span class="line">typedef struct rt_object *rt_object_t;  </span><br></pre></td></tr></table></figure>
+<p>系统对象控制块rt_object的派生类分别是：<br>线程对象、内存池对象、定时器对象、设备对象、IPC（进程间通信）对象。<br>在RT-Thread实时操作系统中，IPC对象的作用就是进行线程间同步与通信，那么由IPC对象派生出来的对象分别为：<br>信号量对象、互斥锁对象、事件集对象、邮箱对象、消息队列对象。</p>
+<p>派生和继承关系如下图所示：</p>
+<p><img src="/2021/07/29/kernel/Kernel_Object.png" alt="Kernel_Object"></p>
+
       
     </div>
 
